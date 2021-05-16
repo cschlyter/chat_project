@@ -1,6 +1,9 @@
 import json
+import requests
+import csv
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
+from channels.consumer import SyncConsumer
 
 from chat.models import Room, Message
 
@@ -31,6 +34,10 @@ class ChatConsumer(WebsocketConsumer):
         message = text_data_json['message']
         user = text_data_json['user']
 
+        if message[0] == "/":
+            stock_name = "aapl.us"
+            async_to_sync(self.channel_layer.send)('background-tasks', {'type': 'stock', 'name': stock_name})
+
         room = Room.objects.get(name=self.room_name)
 
         m = Message(room=room, message=message, user=user)
@@ -59,3 +66,18 @@ class ChatConsumer(WebsocketConsumer):
             'user': user,
             'date': date
         }))
+
+
+class BackgroundTaskConsumer(SyncConsumer):
+
+    def stock(self, message):
+        stock_name = message.get("name")
+        url = f"https://stooq.com/q/l/?s={stock_name}&f=sd2t2ohlcv&h&e=csv"
+
+        r = requests.get(url)
+        csv_file = r.content
+
+        data = csv_file.decode('utf-8').splitlines()
+        share_value = data[1].split(",")[6]
+        message = f"{stock_name} quote is {share_value} per share"
+        print(message)

@@ -6,6 +6,8 @@
 
 {% block body %}
 
+    <h2> {{ room_name }} </h2>
+
     <div id="chat-log">
         {% for message in messages %}
             <div class="card">
@@ -35,8 +37,6 @@
 
         chatSocket.onmessage = function(e) {
             const data = JSON.parse(e.data);
-
-            console.log(data);
 
             var temp = "<div class='card'><div class='card-body'><h5 class='card-title'>" + data.user + "</h5><h6 class='card-subtitle mb-2 text-muted'>"+ data.date + "</h6><p class='card-text'>"+ data.message +"</p></div></div>";
 
