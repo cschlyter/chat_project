@@ -6,7 +6,19 @@
 
 {% block body %}
 
-    <textarea id="chat-log" cols="100" rows="20" readonly></textarea><br>
+    <div id="chat-log">
+        {% for message in messages %}
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ message.user }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">{{ message.formatted_timestamp }}</h6>
+                    <p class="card-text">{{ message.message }}</p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <br>
     <input id="chat-message-input" type="text" size="100"><br>
     <input id="chat-message-submit" type="button" value="Send">
     {{ room_name|json_script:"room-name" }}
@@ -23,7 +35,13 @@
 
         chatSocket.onmessage = function(e) {
             const data = JSON.parse(e.data);
-            document.querySelector('#chat-log').value += (data.message + '\n');
+
+            console.log(data);
+
+            var temp = "<div class='card'><div class='card-body'><h5 class='card-title'>" + data.user + "</h5><h6 class='card-subtitle mb-2 text-muted'>"+ data.date + "</h6><p class='card-text'>"+ data.message +"</p></div></div>";
+
+            $("#chat-log").append(temp);
+            $("#chat-log").animate({scrollTop: 10000}, 1000);
         };
 
         chatSocket.onclose = function(e) {
@@ -41,7 +59,8 @@
             const messageInputDom = document.querySelector('#chat-message-input');
             const message = messageInputDom.value;
             chatSocket.send(JSON.stringify({
-                'message': message
+                'message': message,
+                'user': '{{ user.get_username }}'
             }));
             messageInputDom.value = '';
         };

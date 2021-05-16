@@ -33,9 +33,19 @@ textarea {
 }
 
 #username {
-    max-width: 30%
+    max-width: 30%;
 }
 
 #password {
-    max-width: 30%
+    max-width: 30%;
+}
+
+#chat-log {
+    width: 80%;
+    max-height: 800px;
+    overflow: scroll;
+}
+
+.message-card {
+    width: 100%;
 }

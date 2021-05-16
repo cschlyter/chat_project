@@ -3,6 +3,8 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 
+from chat.models import Room
+
 
 @login_required(login_url='login')
 def index(request):
@@ -51,6 +53,21 @@ def logout_page(request):
 
 @login_required(login_url='login')
 def room(request, room_name):
-    return render(request, 'chat/room.html', {
-        'room_name': room_name
-    })
+
+    r = Room.objects.filter(name=room_name).first()
+    if r:
+
+        messages = reversed(r.messages.order_by('-timestamp')[:50])
+
+        return render(request, 'chat/room.html', {
+            'room_name': room_name,
+            'messages': messages
+        })
+    else:
+        new_room = Room.objects.create(name=room_name)
+        new_room.save()
+
+        return render(request, 'chat/room.html', {
+            'room_name': room_name,
+            'messages': []
+        })
