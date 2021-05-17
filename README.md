@@ -38,6 +38,10 @@ To run Redis via docker:
 
 `docker run -p 6379:6379 -d redis:5`
 
+Run the migrations:
+
+`python manage.py migrate`
+
 To run the server:
 
 `python manage.py runserver`
@@ -45,4 +49,11 @@ To run the server:
 To run the bot consumer service:
 
 `python manage.py stock_consume`
+
+Navigate to:
+
+`http://127.0.0.1:8000/chat`
+
+## Screenshots
+
 
