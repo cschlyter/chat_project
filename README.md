@@ -58,4 +58,4 @@ Register a user and login to see the chat.
 
 ## Screenshots
 
-![](/chat_project\chat\static\img\202430.png)
+![](/chat/static/img/202430.png)
