@@ -35,27 +35,19 @@ class ChatConsumer(WebsocketConsumer):
         user = text_data_json['user']
 
         if message != "" and message[0] == "/":
-            stock_name = "aapl.us"
             async_to_sync(self.channel_layer.send)('background-tasks', {
                 'type': 'stock',
-                'name': stock_name,
-                'room_name': self.room_name,
+                'command': message,
                 'room_group_name': self.room_group_name
             })
         else:
-            room = Room.objects.get(name=self.room_name)
-
-            m = Message(room=room, message=message, user=user)
-            m.save()
-
             # Send message to room group
             async_to_sync(self.channel_layer.group_send)(
                 self.room_group_name,
                 {
                     'type': 'chat_message',
                     'message': message,
-                    'user': user,
-                    'date': m.formatted_timestamp
+                    'user': user
                 }
             )
 
@@ -63,44 +55,56 @@ class ChatConsumer(WebsocketConsumer):
     def chat_message(self, event):
         message = event['message']
         user = event['user']
-        date = event['date']
+
+        room = Room.objects.get(name=self.room_name)
+
+        m = Message(room=room, message=message, user=user)
+        m.save()
 
         # Send message to WebSocket
         self.send(text_data=json.dumps({
             'message': message,
             'user': user,
-            'date': date
+            'date': m.formatted_timestamp
         }))
 
 
 class BackgroundTaskConsumer(SyncConsumer):
 
     def stock(self, message):
-        stock_name = message.get("name")
-        room_name = message.get("room_name")
+        command = message.get("command")
         room_group_name = message.get("room_group_name")
-        url = f"https://stooq.com/q/l/?s={stock_name.lower()}&f=sd2t2ohlcv&h&e=csv"
-
-        r = requests.get(url)
-        csv_file = r.content
-        data = csv_file.decode('utf-8').splitlines()
-        share_value = data[1].split(",")[6]
-        robot_message = f"{stock_name.upper()} quote is {share_value} per share"
-
         channel_layer = get_channel_layer()
         user = "Stock Robot"
 
-        room = Room.objects.get(name=room_name)
-        m = Message(room=room, message=robot_message, user=user)
-        m.save()
+        if command.startswith("/stock="):
 
-        async_to_sync(channel_layer.group_send)(
-            room_group_name,
-            {
-                'type': 'chat_message',
-                'message': robot_message,
-                'user': user,
-                'date': m.formatted_timestamp
-            }
-        )
+            stock_name = command.split("=")[1]
+
+            url = f"https://stooq.com/q/l/?s={stock_name.lower()}&f=sd2t2ohlcv&h&e=csv"
+
+            r = requests.get(url)
+            csv_file = r.content
+            data = csv_file.decode('utf-8').splitlines()
+            share_open_value = data[1].split(",")[3]
+            robot_message = f"{stock_name.upper()} quote is {share_open_value} per share"
+
+            async_to_sync(channel_layer.group_send)(
+                room_group_name,
+                {
+                    'type': 'chat_message',
+                    'message': robot_message,
+                    'user': user
+                }
+            )
+        else:
+            async_to_sync(channel_layer.group_send)(
+                room_group_name,
+                {
+                    'type': 'chat_message',
+                    'message': f"Invalid command: {command}. Try /stock=STOCK_NAME",
+                    'user': user
+                }
+            )
+
 
