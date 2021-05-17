@@ -2,6 +2,7 @@ import requests
 import pika
 import json
 from django.http import HttpResponse
+from django.conf import settings
 
 
 def stock(request):
@@ -26,7 +27,7 @@ def stock(request):
 
 
 def send_rabbit_message(robot_message, room_name, user):
-    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+    connection = pika.BlockingConnection(pika.ConnectionParameters(settings.RABBIT_HOST))
     channel = connection.channel()
     channel.queue_declare(queue='stock_queue')
     body = {

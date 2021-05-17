@@ -1,5 +1,6 @@
 import pika
 import json
+from django.conf import settings
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.core.management.base import BaseCommand
@@ -11,14 +12,13 @@ class Command(BaseCommand):
     help = 'Consumes a rabbitmq queue with stock quotes from the Stock Bot'
 
     def handle(self, *args, **options):
-        connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+        print(settings.RABBIT_HOST)
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host=settings.RABBIT_HOST))
         channel = connection.channel()
 
         channel.queue_declare(queue='stock_queue', passive=True)
 
         def callback(ch, method, properties, body):
-            print("Message:")
-            print(body)
             message = json.loads(body)
 
             room_name = message.get("room")
