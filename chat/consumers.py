@@ -1,5 +1,6 @@
 import json
 import requests
+from datetime import datetime
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
 from channels.consumer import SyncConsumer
@@ -34,20 +35,30 @@ class ChatConsumer(WebsocketConsumer):
         message = text_data_json['message']
         user = text_data_json['user']
 
-        if message != "" and message[0] == "/":
-            async_to_sync(self.channel_layer.send)('background-tasks', {
+        if message is None or message == "":
+            return
+
+        if message[0] == "/":
+            async_to_sync(self.channel_layer.send)('stock-bot', {
                 'type': 'stock',
                 'command': message,
+                'room_name': self.room_name,
                 'room_group_name': self.room_group_name
             })
         else:
+            room = Room.objects.get(name=self.room_name)
+
+            m = Message(room=room, message=message, user=user)
+            m.save()
+
             # Send message to room group
             async_to_sync(self.channel_layer.group_send)(
                 self.room_group_name,
                 {
                     'type': 'chat_message',
                     'message': message,
-                    'user': user
+                    'user': user,
+                    'date': m.formatted_timestamp
                 }
             )
 
@@ -55,46 +66,41 @@ class ChatConsumer(WebsocketConsumer):
     def chat_message(self, event):
         message = event['message']
         user = event['user']
-
-        room = Room.objects.get(name=self.room_name)
-
-        m = Message(room=room, message=message, user=user)
-        m.save()
+        date = event['date']
 
         # Send message to WebSocket
         self.send(text_data=json.dumps({
             'message': message,
             'user': user,
-            'date': m.formatted_timestamp
+            'date': date
         }))
 
 
-class BackgroundTaskConsumer(SyncConsumer):
+class StockBotConsumer(SyncConsumer):
 
     def stock(self, message):
         command = message.get("command")
+        room_name = message.get("room_name")
         room_group_name = message.get("room_group_name")
         channel_layer = get_channel_layer()
         user = "Stock Robot"
 
         if command.startswith("/stock="):
 
-            stock_name = command.split("=")[1]
+            robot_message = self.get_stock_quote(command)
 
-            url = f"https://stooq.com/q/l/?s={stock_name.lower()}&f=sd2t2ohlcv&h&e=csv"
+            room = Room.objects.get(name=room_name)
 
-            r = requests.get(url)
-            csv_file = r.content
-            data = csv_file.decode('utf-8').splitlines()
-            share_open_value = data[1].split(",")[3]
-            robot_message = f"{stock_name.upper()} quote is {share_open_value} per share"
+            m = Message(room=room, message=robot_message, user=user)
+            m.save()
 
             async_to_sync(channel_layer.group_send)(
                 room_group_name,
                 {
                     'type': 'chat_message',
                     'message': robot_message,
-                    'user': user
+                    'user': user,
+                    'date': m.formatted_timestamp
                 }
             )
         else:
@@ -103,8 +109,24 @@ class BackgroundTaskConsumer(SyncConsumer):
                 {
                     'type': 'chat_message',
                     'message': f"Invalid command: {command}. Try /stock=STOCK_NAME",
-                    'user': user
+                    'user': user,
+                    'date': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
             )
 
+    def get_stock_quote(self, command):
 
+        stock_name = command.split("=")[1]
+
+        url = f"https://stooq.com/q/l/?s={stock_name.lower()}&f=sd2t2ohlcv&h&e=csv"
+        r = requests.get(url)
+
+        if r.status_code == 200:
+            csv_file = r.content
+            data = csv_file.decode('utf-8').splitlines()
+            share_open_value = data[1].split(",")[3]
+            robot_message = f"{stock_name.upper()} quote is {share_open_value} per share"
+        else:
+            robot_message = "An error ocurred while getting the Stock price. Please try again."
+
+        return robot_message
