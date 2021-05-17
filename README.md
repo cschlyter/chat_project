@@ -12,7 +12,7 @@ For example:
 
 ## Installation
 
-`$ pip install -r requirements.txt`
+`$ pip3 install -r requirements.txt`
 
 Configure in your OS the following environment variables:
 
@@ -25,7 +25,7 @@ REDIS_HOST=localhost
 
 ## Running the tests
 
-`python manage.py test`
+`python3 manage.py test`
 
 ## Usage example
 You need to have Redis and RabbitMQ running and configured in the environment variables:
@@ -40,19 +40,21 @@ To run Redis via docker:
 
 Run the migrations:
 
-`python manage.py migrate`
+`python3 manage.py migrate`
 
 To run the server:
 
-`python manage.py runserver`
+`python3 manage.py runserver`
 
 To run the bot consumer service:
 
-`python manage.py stock_consume`
+`python3 manage.py stock_consume`
 
 Navigate to:
 
 `http://127.0.0.1:8000/chat`
+
+Register a user and login to see the chat.
 
 ## Screenshots
 
