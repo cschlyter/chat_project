@@ -21,7 +21,7 @@ def register(request):
             form = UserCreationForm(request.POST)
             if form.is_valid():
                 form.save()
-                return redirect('login_page')
+                return redirect('login')
 
         context = {'form': form}
         return render(request, 'chat/register.html', context)

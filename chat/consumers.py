@@ -1,12 +1,6 @@
 import json
-import requests
-from datetime import datetime
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
-from channels.consumer import SyncConsumer
-from channels.layers import get_channel_layer
-
-from chat.models import Room, Message
 from chat.services import MessageService
 
 
@@ -43,28 +37,20 @@ class ChatConsumer(WebsocketConsumer):
         if message is None or message == "":
             return
 
-        if message[0] == "/":
-            async_to_sync(self.channel_layer.send)('stock-bot', {
-                'type': 'stock',
-                'command': message,
-                'room_name': self.room_name,
-                'room_group_name': self.room_group_name
-            })
-        else:
-            user = text_data_json['user']
+        user = text_data_json['user']
 
-            m = self.message_service.insert_message(self.room_name, message, user)
+        m = self.message_service.insert_message(self.room_name, message, user)
 
-            # Send message to room group
-            async_to_sync(self.channel_layer.group_send)(
-                self.room_group_name,
-                {
-                    'type': 'chat_message',
-                    'message': message,
-                    'user': user,
-                    'date': m.formatted_timestamp
-                }
-            )
+        # Send message to room group
+        async_to_sync(self.channel_layer.group_send)(
+            self.room_group_name,
+            {
+                'type': 'chat_message',
+                'message': message,
+                'user': user,
+                'date': m.formatted_timestamp
+            }
+        )
 
     # Receive message from room group
     def chat_message(self, event):
