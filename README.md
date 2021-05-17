@@ -5,6 +5,7 @@
 Tools and packages required to successfully install this project.
 For example:
 * Python 3.3 and up
+* Latest version of pip
 * RabbitMQ (To procces to stock bot messages)
 * Redis (Used by the channels library)
 * Docker (Optional)

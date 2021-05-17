@@ -16,7 +16,7 @@ class Command(BaseCommand):
         connection = pika.BlockingConnection(pika.ConnectionParameters(host=settings.RABBIT_HOST))
         channel = connection.channel()
 
-        channel.queue_declare(queue='stock_queue', passive=True)
+        channel.queue_declare(queue='stock_queue')
 
         def callback(ch, method, properties, body):
             message = json.loads(body)
