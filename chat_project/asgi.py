@@ -13,7 +13,6 @@ from channels.auth import AuthMiddlewareStack
 from channels.routing import ProtocolTypeRouter, URLRouter, ChannelNameRouter
 from django.core.asgi import get_asgi_application
 import chat.routing
-from chat.consumers import StockBotConsumer
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'chat_project.settings')
 
@@ -23,8 +22,5 @@ application = ProtocolTypeRouter({
         URLRouter(
             chat.routing.websocket_urlpatterns
         )
-    ),
-    "channel": ChannelNameRouter({
-        'stock-bot': StockBotConsumer(),
-    })
+    )
 })

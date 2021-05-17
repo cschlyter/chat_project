@@ -35,6 +35,8 @@
             + '/'
         );
 
+        var url = '{{ request.host }}' + "/bot/stock/";
+
         chatSocket.onmessage = function(e) {
             const data = JSON.parse(e.data);
 
@@ -60,13 +62,30 @@
             const message = messageInputDom.value;
 
             if (message != "") {
-                chatSocket.send(JSON.stringify({
-                    'message': message,
-                    'user': '{{ user.get_username }}'
-                }));
+
+                if (message.startsWith("/")) {
+                    var data = {
+                        "command": message,
+                        "room_name": roomName
+                    };
+
+                    var token = '{{csrf_token}}';
+
+                    $.ajax({
+                      type: "POST",
+                      headers: { "X-CSRFToken": token },
+                      url: url,
+                      data: data
+                    });
+                }
+                else {
+                    chatSocket.send(JSON.stringify({
+                        'message': message,
+                        'user': '{{ user.get_username }}'
+                    }));
+                }
                 messageInputDom.value = '';
             }
-
         };
     </script>
 
