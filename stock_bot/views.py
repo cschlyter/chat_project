@@ -1,6 +1,7 @@
 import requests
 import pika
 import json
+import csv
 from django.http import HttpResponse
 from django.conf import settings
 
@@ -50,9 +51,12 @@ def get_stock_quote(command):
 
     if r.status_code == 200:
         csv_file = r.content
-        data = csv_file.decode('utf-8').splitlines()
-        share_open_value = data[1].split(",")[3]
-        robot_message = f"{stock_name.upper()} quote is {share_open_value} per share"
+        lines = csv_file.decode('utf-8').splitlines()
+        reader = csv.reader(lines, delimiter=',')
+
+        csv_list = list(reader)
+
+        robot_message = f"{stock_name.upper()} quote is {csv_list[1][3]} per share"
     else:
         robot_message = "An error ocurred while getting the Stock price. Please try again."
 
